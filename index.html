@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Management System - Professional Education Portal</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="./assets/images/logo.png">
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Load Custom CSS -->
+    <link rel="stylesheet" href="./assets/css/styles.css">
+    
+    <!-- Preload important resources -->
+    <link rel="preload" href="./assets/images/logo.png" as="image">
+    
+    <!-- Load Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Load Lucide icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Load SheetJS for Excel parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <!-- Load custom JavaScript -->
+    <script src="./assets/js/app.js"></script>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen flex flex-col">
+
+    <!-- Main Application Container -->
+    <div id="app" class="flex flex-col min-h-screen">
+        
+        <!-- Header & Navigation (Hidden until authenticated) -->
+        <header id="header" class="bg-primary text-white shadow-lg sticky top-0 z-10 hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+                <div class="flex justify-between items-center">
+                    <div class="school-brand">
+                        <img src="./assets/images/logo.png" alt="School Logo" class="school-logo">    
+                        <div>
+                            <div class="school-name">DAV PUBLIC SCHOOL NTPC TOWNSHIP, JAMTHAL</div>
+                            <div class="school-subtitle">Professional Education Portal</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Hidden Panel Title (for functionality but not displayed) -->
+                    <div class="hidden">
+                        <span id="role-title" class="text-lg font-semibold text-white">Panel</span>
+                    </div>
+                    
+                    <!-- Professional User Dropdown -->
+                    <div class="user-dropdown">
+                        <button onclick="toggleUserDropdown()" class="flex items-center space-x-2 text-white hover:text-gray-200 transition-colors duration-200 focus:outline-none">
+                            <div id="user-avatar" class="user-avatar">
+                                <span id="user-initials">U</span>
+                            </div>
+                            <div class="hidden sm:block text-left">
+                                <div id="display-name" class="text-sm font-medium">User</div>
+                                <div id="user-role" class="text-xs text-white/70">Role</div>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 ml-1"></i>
+                        </button>
+                        
+                        <div id="user-dropdown-content" class="dropdown-content">
+                            <button onclick="showPasswordChangeModal(); hideUserDropdown();" class="dropdown-item">
+                                <i data-lucide="lock" class="w-4 h-4"></i>
+                                Change Password
+                            </button>
+                            <button onclick="showRoleSelector(); hideUserDropdown();" class="dropdown-item">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+            <div id="content-panel">
+                <div class="flex flex-col items-center justify-center h-96">
+                    <div id="loading-spinner" class="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+                    <p id="loading-text" class="mt-4 text-lg text-gray-600">Initializing Firebase and checking authentication...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Professional Footer -->
+        <footer class="footer mt-auto">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col sm:flex-row justify-between items-center">
+                    <div class="flex items-center mb-2 sm:mb-0">
+                        <img src="./assets/images/logo.png" alt="School Logo" class="school-logo">
+                        <div>
+                            <div class="font-semibold text-sm">DAV Public School NTPC Township, Jamthal</div>
+                            <div class="text-xs text-white/70">Professional Education Portal</div>
+                        </div>
+                    </div>
+                    <div class="text-center sm:text-right">
+                        <div class="text-sm font-medium">&copy; 2025 DAV Public School NTPC Township, Jamthal. All Rights Reserved.</div>
+                        <div class="text-xs text-white/70 mt-1">School Management System v2.0 | Powered by Advanced Technology</div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Dynamic Modal Containers -->
+        <div id="modal-container">
+            <!-- Notification Modal (General alerts) -->
+            <div id="notification-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center">
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+                    <h3 id="modal-title" class="text-xl font-bold mb-3 text-primary">Notification</h3>
+                    <p id="modal-message" class="text-gray-700 mb-4">Message content.</p>
+                    <div class="flex justify-end">
+                        <button onclick="hideNotificationModal()" class="bg-primary hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-150">Close</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Password Change Modal -->
+            <div id="password-change-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center">
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-primary flex items-center">
+                            <i data-lucide="lock" class="w-5 h-5 mr-2"></i>
+                            Change Password
+                        </h3>
+                        <button onclick="hidePasswordChangeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="password-change-form" onsubmit="event.preventDefault(); handlePasswordChange();">
+                        <div class="mb-4">
+                            <label for="current-password" class="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                            <input type="password" id="current-password" required class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 transition duration-150" placeholder="Enter current password">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="new-password" class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                            <input type="password" id="new-password" required minlength="4" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 transition duration-150" placeholder="Enter new password">
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                            <input type="password" id="confirm-password" required minlength="4" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 transition duration-150" placeholder="Confirm new password">
+                        </div>
+                        
+                        <div id="password-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p class="text-red-700 text-sm"></p>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" onclick="hidePasswordChangeModal()" class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition duration-150">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-primary text-white hover:bg-indigo-600 rounded-lg transition duration-150 flex items-center">
+                                <i data-lucide="check" class="w-4 h-4 mr-2"></i>
+                                Change Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <!-- Modal Container for Dynamic Modals -->
+    <div id="modal-container"></div>
+
+    <!-- Firebase Application Logic -->
+    <script src="./assets/js/firebase-app.js"></script>
+    
+    <!-- Initialize icons after page load -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Lucide icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    </script>
+
+</body>
+</html>
